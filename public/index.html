@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Space Flappy Bird Thing</title>
+    <link rel="icon" type="image/x-icon" href="./assets/favicon.ico">
+    <style>
+        @font-face {
+            src: url('./assets/BebasNeue-Regular.ttf');
+            font-family: 'bahaha';
+            font-weight: 400;
+        }
+
+        body {
+            font-family: 'bahaha';
+            background: #1b1b1b;
+        }
+    </style>
+    <script src="./lib/phaser-arcade-physics.js"></script>
+    <script src="./lib/socket.io.min.js"></script>
+    <script>
+        window.socket = io();
+        socket.on("connect", () => {
+            console.log('my id:', socket.id);
+        });
+    </script>
+    <script src="./game.js" defer></script>
+</head>
+
+<body>
+
+</body>
+
+</html>
