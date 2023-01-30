@@ -3,7 +3,7 @@
 
 <head>
     <script src="./lib/phaser-arcade-physics.js"></script>
-    <script src="./lib/socket.io.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
 
     <title>Space Flappy Bird Thing</title>
     <link rel="icon" type="image/x-icon" href="./assets/favicon.ico">
@@ -26,13 +26,6 @@
     <script src="./src/killfeed.js"></script>
     <script src="./src/player.js"></script>
     <script src="./src/stage.js"></script>
-
-    <script>
-        window.socket = io();
-        socket.on("connect", () => {
-            console.log('my id:', socket.id);
-        });
-    </script>
     <script src="./game.js" defer></script>
 </head>
 

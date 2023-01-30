@@ -34,10 +34,8 @@ const game = new Phaser.Game({
 });
 console.log('FLAPPY', `${SCREEN_WIDTH}x${SCREEN_HEIGHT}`);
 
-var scoreText;
-var highScoreText;
-
-var vX = 0;
+/** @type {MultiplayerClient} */
+const mpClient = new MultiplayerClient();
 
 /** @type {Stage} */
 let stageObj;
@@ -69,6 +67,11 @@ var soundHit;
 var soundWing;
 var soundSwoosh;
 
+var scoreText;
+var highScoreText;
+
+var vX = 0;
+
 function reset() {
     if (vX > highest_score) {
         highest_score = vX;
@@ -82,7 +85,8 @@ function reset() {
 
 function playerDie() {
     soundHit.play();
-    window['socket'].emit('die', vX);
+
+    mpClient.sendDeathScore(vX);
 
     currentGameState = GameState.START;
     playerObj.stopPhysics();
@@ -123,51 +127,6 @@ function create() {
     playerObj.createParticle(this.add.particles('red'));
     playerObj.stopPhysics();
 
-    // When server broadcasts a listing of clients, update UI
-    var socketPrep = setInterval(() => {
-        if (window['socket']) {
-            clearInterval(socketPrep);
-        }
-
-        window['socket'].on('move', (obj) => {
-            if (obj.id != window['socket'].id) {
-                let playerEntry = otherPlayers.find((p) => p.id == obj.id);
-                if (!playerEntry) {
-                    playerEntry = new Player(this, startLocation, false, false);
-                    playerEntry.id = obj.id;
-                    playerEntry.sprite.setTexture(Player.FRAMES.FRIENDS.name);
-                    playerEntry.stopPhysics();
-
-                    otherPlayers.push(playerEntry);
-                    console.warn('Creating', obj.id, playerEntry);
-                }
-
-                playerEntry.sprite.alpha = 1;
-                playerEntry.setLocation(startLocation.x + obj.location.x - vX, obj.location.y);
-            }
-        });
-
-        window['socket'].on('leave', (playerId) => {
-            if (playerId != window['socket'].id) {
-                const playerEntry = otherPlayers.find((p) => p.id == playerId);
-                if (playerEntry) {
-                    playerEntry.sprite.alpha = 0;
-                    playerEntry.sprite.destroy();
-                    console.log('Destroying', playerId, playerEntry);
-                }
-            }
-        })
-
-        window['socket'].on('die', (obj) => {
-            const isMe = obj.id == window['socket'].id;
-
-            const playerEntry = otherPlayers.find((p) => p.id == obj.id);
-            if (playerEntry) { playerEntry.sprite.alpha = 0; }
-
-            killFeedObj.addKill(isMe ? 'you' : obj.id, obj.score);
-        });
-    }, 200);
-
     // ? STAGE
     stageObj = new Stage(this, playerObj, playerDie);
 
@@ -186,6 +145,9 @@ function create() {
 
     // ? KILL FEED
     killFeedObj = new KillFeed(this, SCREEN_WIDTH - 10, 10);
+
+    // ? MP EVENTS
+    hookMultiplayerEvents(this);
 }
 
 function update(timeMs, delta) {
@@ -218,9 +180,7 @@ function update(timeMs, delta) {
     if (currentGameState == GameState.PLAYING) {
         vX += adjustedSpeed;
 
-        if (window['socket']) {
-            window['socket'].emit('move', { x: vX, y: playerObj.sprite.y });
-        }
+        mpClient.sendLocation(vX, playerObj.sprite.y);
 
         // ! Move background
         backgroundTile.setScrollDistance(vX);
@@ -237,4 +197,46 @@ function update(timeMs, delta) {
     // ! KillFeed
     killFeedObj.update();
 
+}
+
+function hookMultiplayerEvents(sceneRef) {
+    mpClient.onPlayerMove((obj) => {
+        if (obj.id != mpClient.id) {
+            let playerEntry = otherPlayers.find((p) => p.id == obj.id);
+            if (!playerEntry) {
+                playerEntry = new Player(sceneRef, startLocation, false, false);
+                playerEntry.id = obj.id;
+                playerEntry.sprite.setTexture(Player.FRAMES.FRIENDS.name);
+                playerEntry.stopPhysics();
+
+                otherPlayers.push(playerEntry);
+                console.warn('Creating', obj.id, playerEntry);
+            }
+
+            playerEntry.sprite.alpha = 1;
+            playerEntry.setLocation(startLocation.x + obj.location.x - vX, obj.location.y);
+        }
+    });
+
+    mpClient.onPlayerLeave((playerId) => {
+        if (playerId != mpClient.id) {
+            const playerEntry = otherPlayers.find((p) => p.id == playerId);
+            if (playerEntry) {
+                playerEntry.sprite.alpha = 0;
+                playerEntry.sprite.destroy();
+                console.log('Destroying', playerId, playerEntry);
+            }
+        }
+    });
+
+    mpClient.onPlayerDie((obj) => {
+        const playerEntry = otherPlayers.find((p) => p.id == obj.id);
+        if (playerEntry) { 
+            playerEntry.sprite.alpha = 0;
+            playerEntry.sprite.x = 0;
+            playerEntry.sprite.y = 0;
+         }
+
+        killFeedObj.addKill((obj.id == mpClient.id) ? 'you' : obj.id, obj.score);
+    });
 }

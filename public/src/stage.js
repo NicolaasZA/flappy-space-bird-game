@@ -52,8 +52,11 @@ class Stage {
             });
     }
 
+    /**
+     * @param {number} virtualX
+     */
     update(virtualX) {
-        this.pipes.forEach((p, i) => {
+        this.pipes.forEach((p) => {
             p.top.x = p.startX - virtualX;
             p.bottom.x = p.startX - virtualX;
         });
