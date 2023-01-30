@@ -1,27 +1,23 @@
 
 const SCREEN_WIDTH = Math.max(Math.min(document.body.clientWidth, 1024), 640);
 const SCREEN_HEIGHT = Math.max(Math.min(document.body.clientHeight, 768), 640);
-const GRAVITY = 980;
+const startLocation = { x: SCREEN_WIDTH / 2, y: SCREEN_HEIGHT / 2 };
+
 const SPAWN_COOLDOWN_MS = 2000;
 const KILL_FEED_TIMEOUT_MS = 3000;
 const X_SCALE = 80;
 const PIPE_GAP = 60;
 const PIPE_WIDTH = 60;
 const VELOCITY = 2.2;
-const JUMP_POWER = 300;
-
-const FRAMES = {
-    FRIENDS: { key: 1, name: 'player-others', angle: 0 },
-    UP: { key: 0, name: 'player-up', angle: -45 },
-    FRONT: { key: 1, name: 'player-front', angle: 0 },
-    DOWN: { key: 2, name: 'player-down', angle: 45 },
-    rangeValue: 20
-}
 
 let highest_score = 0;
 
+class GameState {
+    static START = 0;
+    static PLAYING = 1;
+}
+
 class Rect {
-    /** @type {number} */
     left = 0;
     right = 0;
     top = 0;
@@ -68,7 +64,6 @@ const game = new Phaser.Game({
     physics: {
         default: 'arcade',
         arcade: {
-            // gravity: { y: GRAVITY },
             debug: false
         }
     },
@@ -87,12 +82,14 @@ var scoreText;
 // var deltaText;
 var highScoreText;
 
-let MOVE = false;
 var vX = 0;
 var isPoweredUp = false;
-var player;
-var particles;
 var graphics;
+
+/** @type {Player} */
+let playerObj;
+
+let currentGameState = GameState.START;
 
 var keySpace;
 var keyReset;
@@ -116,9 +113,7 @@ function reset() {
         highest_score = vX;
     }
     vX = 0;
-    player.setVelocity(0, 0);
-    player.x = SCREEN_WIDTH / 2;
-    player.y = SCREEN_HEIGHT / 2;
+
     backgroundTile.tilePositionX = 0;
 
     pipes.forEach((p) => {
@@ -128,21 +123,19 @@ function reset() {
 }
 
 function playerDie() {
-    window['socket'].emit('die', vX);
-    reset();
-
     soundHit.play();
+    window['socket'].emit('die', vX);
+
+    currentGameState = GameState.START;
+    playerObj.stopPhysics();
+    playerObj.setLocation(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
+
     scoreText.alpha = 1;
+
+    reset();
 }
 
-function calculateFrame(velocityY) {
-    if (velocityY < 0 - FRAMES.rangeValue) {
-        return FRAMES.UP;
-    } else if (velocityY > FRAMES.rangeValue) {
-        return FRAMES.DOWN;
-    }
-    return FRAMES.FRONT;
-}
+
 
 function padded(val, len) {
     let result = (val ?? '') + '';
@@ -165,10 +158,10 @@ function updateKillFeed() {
 }
 
 function preload() {
-    this.load.image(FRAMES.UP.name, 'assets/sprites/redbird-upflap.png');
-    this.load.image(FRAMES.FRONT.name, 'assets/sprites/redbird-midflap.png');
-    this.load.image(FRAMES.DOWN.name, 'assets/sprites/redbird-downflap.png');
-    this.load.image(FRAMES.FRIENDS.name, 'assets/sprites/bluebird-midflap.png');
+    this.load.image(Player.FRAMES.UP.name, 'assets/sprites/redbird-upflap.png');
+    this.load.image(Player.FRAMES.FRONT.name, 'assets/sprites/redbird-midflap.png');
+    this.load.image(Player.FRAMES.DOWN.name, 'assets/sprites/redbird-downflap.png');
+    this.load.image(Player.FRAMES.FRIENDS.name, 'assets/sprites/bluebird-midflap.png');
 
     this.load.image('space', 'assets/sprites/space3.png');
     this.load.image('red', 'assets/particles/red.png');
@@ -188,31 +181,18 @@ function create() {
     soundWing = this.sound.add('wing');
     soundSwoosh = this.sound.add('swoosh');
 
+    // ? GAME STATE
+    currentGameState = GameState.START;
+
     // ? BACKGROUND
     backgroundTile = this.add.tileSprite(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, "space");
     backgroundTile.originX = 0;
     backgroundTile.originY = 0;
 
     // ? PLAYER
-    player = this.physics.add.image(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, calculateFrame(0 - GRAVITY).name);
-    player.setCollideWorldBounds(true);
-    player.setAccelerationY(GRAVITY);
-    player.setVelocityY(-GRAVITY);
-    player.depth = 1;
-    reset();
-
-    // ? HIGHLIGHT PARTICLES
-    particles = this.add.particles('red');
-    var emitter = particles.createEmitter({
-        speedX: -250,
-        gravityY: GRAVITY / 10,
-        alpha: 0.8,
-        lifespan: 400,
-        scale: { start: 0.2, end: 0 },
-        blendMode: 'OVERLAY'
-    });
-
-    emitter.startFollow(player);
+    playerObj = new Player(this, startLocation, true);
+    playerObj.createParticle(this.add.particles('red'));
+    playerObj.stopPhysics();
 
     // When server broadcasts a listing of clients, update UI
     var socketPrep = setInterval(() => {
@@ -224,7 +204,7 @@ function create() {
             if (obj.id != window['socket'].id) {
                 let playerEntry = players.find((p) => p.id == obj.id);
                 if (!playerEntry) {
-                    playerEntry = { id: obj.id, sprite: this.physics.add.image(obj.location.x, obj.location.y, FRAMES.FRIENDS.name) };
+                    playerEntry = { id: obj.id, sprite: this.physics.add.image(obj.location.x, obj.location.y, Player.FRAMES.FRIENDS.name) };
                     playerEntry.sprite.setCollideWorldBounds(false);
                     players.push(playerEntry);
                     console.warn('creating', obj.id, playerEntry);
@@ -299,20 +279,19 @@ function create() {
                     graphicsTop.body.setSize(topBounds.width, topBounds.height);
                     graphicsBottom.body.setSize(bottomBounds.width, bottomBounds.height);
 
-                    this.physics.add.collider(player, graphicsTop, playerDie);
-                    this.physics.add.collider(player, graphicsBottom, playerDie);
+                    this.physics.add.collider(playerObj.sprite, graphicsTop, playerDie);
+                    this.physics.add.collider(playerObj.sprite, graphicsBottom, playerDie);
 
                     obj['top'] = graphicsTop;
                     obj['bottom'] = graphicsBottom;
                     obj['startX'] = startX;
 
-                    this.physics.collide(graphicsTop, player, () => console.warn('yes'));
-                    this.physics.collide(graphicsBottom, player, () => console.warn('yes'));
+                    this.physics.collide(graphicsTop, playerObj.sprite, () => console.warn('yes'));
+                    this.physics.collide(graphicsBottom, playerObj.sprite, () => console.warn('yes'));
 
                     pipes.push(obj);
                 });
                 window.pipes = pipes;
-                MOVE = true;
             });
         });
 
@@ -346,28 +325,29 @@ function create() {
 
 function update(timeMs, delta) {
     const adjustedSpeed = VELOCITY * delta / 8.33
-    // console.warn(adjustedSpeed);
 
-    if (keyReset.isDown) { reset(); }
-    if (keyPause.isDown) { MOVE = !MOVE; }
+    if (keyReset.isDown) {
+        currentGameState = GameState.START;
+        playerObj.stopPhysics();
+        playerObj.setLocation()
+    }
 
     // ! Move player
     if (keySpace.isDown || this.input.activePointer.isDown) {
-        player.setVelocityY(-JUMP_POWER);
-        Math.round(Math.random() * 11) <= 5 ? soundWing.play() : soundSwoosh.play();
+        if (currentGameState == GameState.START) {
+            currentGameState = GameState.PLAYING;
+            playerObj.startPhysics();
+        } else {
+            playerObj.jump();
+            soundWing.play();
+        }
     }
 
-    if (MOVE) {
+    if (currentGameState == GameState.PLAYING) {
         vX += adjustedSpeed;
 
-        player.setAccelerationY(GRAVITY);
-
-        const frame = calculateFrame(player.body.velocity.y);
-        player.setTexture(frame.name);
-        player.angle = frame.angle;
-
         if (window['socket']) {
-            window['socket'].emit('move', { x: vX, y: player.y });
+            window['socket'].emit('move', { x: vX, y: playerObj.sprite.y });
         }
 
         // ! Move background
@@ -379,10 +359,11 @@ function update(timeMs, delta) {
         });
     }
 
+    playerObj.updateAnimation();
+
     // ! Update UI
     highScoreText.text = '' + Math.round(Math.max(highest_score, vX));
     scoreText.text = '' + Math.round(vX);
-    // deltaText.text = '' + Math.round(delta * 1000) / 1000;
 
     // ! KillFeed
     updateKillFeed();
