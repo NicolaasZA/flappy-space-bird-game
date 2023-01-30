@@ -77,12 +77,13 @@ const game = new Phaser.Game({
     }
 });
 
-var backgroundTile;
 var scoreText;
-// var deltaText;
 var highScoreText;
 
 var vX = 0;
+
+/** @type {Backdrop} */
+let backgroundTile;
 
 /** @type {Player} */
 let playerObj;
@@ -119,7 +120,7 @@ function reset() {
     }
     vX = 0;
 
-    backgroundTile.tilePositionX = 0;
+    backgroundTile.setScrollDistance(vX);
 
     pipes.forEach((p) => {
         p.top.x = p.startX - vX;
@@ -176,10 +177,6 @@ function preload() {
     this.load.audio('swoosh', ['assets/audio/swoosh.wav', 'assets/audio/swoosh.ogg']);
 }
 
-function onPipeCollision(pipe) {
-    console.warn('PIPE COLLISION', pipe);
-}
-
 function create() {
     // ? AUDIO
     soundHit = this.sound.add('hit');
@@ -190,9 +187,7 @@ function create() {
     currentGameState = GameState.START;
 
     // ? BACKGROUND
-    backgroundTile = this.add.tileSprite(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, "space");
-    backgroundTile.originX = 0;
-    backgroundTile.originY = 0;
+    backgroundTile = new Backdrop(this, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, "space");
 
     // ? PLAYER
     playerObj = new Player(this, startLocation, true);
@@ -236,7 +231,7 @@ function create() {
 
         window['socket'].on('die', (obj) => {
             const isMe = obj.id == window['socket'].id;
-                
+
             const playerEntry = otherPlayers.find((p) => p.id == obj.id);
             if (playerEntry) { playerEntry.sprite.alpha = 0; }
 
@@ -366,7 +361,7 @@ function update(timeMs, delta) {
         }
 
         // ! Move background
-        backgroundTile.tilePositionX = vX;
+        backgroundTile.setScrollDistance(vX);
 
         pipes.forEach((p) => {
             p.top.x = p.startX - vX;
