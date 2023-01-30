@@ -12,6 +12,8 @@ const VELOCITY = 2.2;
 let highest_score = 0;
 
 const FONT_OBJ = { fontFamily: 'bahaha, cursive', fontSize: '48px' };
+const GET_READY_FONT = { fontFamily: 'bahaha, cursive', fontSize: '64px', color: '#ff0000' };
+const HELP_FONT = { fontFamily: 'bahaha, cursive', fontSize: '48px', color: '#ffffff' };
 
 const game = new Phaser.Game({
     type: Phaser.AUTO,
@@ -63,38 +65,64 @@ var keyPause;
 let keySpacePressed = false;
 let keyResetPressed = false;
 
+/** @type {Phaser.Sound.NoAudioSound | Phaser.Sound.HTML5AudioSound | Phaser.Sound.WebAudioSound} */
 var soundHit;
+/** @type {Phaser.Sound.NoAudioSound | Phaser.Sound.HTML5AudioSound | Phaser.Sound.WebAudioSound} */
 var soundWing;
+/** @type {Phaser.Sound.NoAudioSound | Phaser.Sound.HTML5AudioSound | Phaser.Sound.WebAudioSound} */
 var soundSwoosh;
+/** @type {Phaser.Sound.NoAudioSound | Phaser.Sound.HTML5AudioSound | Phaser.Sound.WebAudioSound} */
+var soundtrack;
 
+/** @type {Phaser.GameObjects.Text} */
 var scoreText;
+/** @type {Phaser.GameObjects.Text} */
 var highScoreText;
+/** @type {Phaser.GameObjects.Text} */
+var getReadyText;
+/** @type {Phaser.GameObjects.Text} */
+var helpText;
 
 var vX = 0;
 
-function reset() {
-    if (vX > highest_score) {
-        highest_score = vX;
+function setGameState(newState) {
+    currentGameState = newState;
+    
+    if (newState == GameState.START) {
+        console.log('new state start');
+        playerObj.stopPhysics();
+        playerObj.setLocation(startLocation.x, startLocation.y);
+
+        if (vX > highest_score) { highest_score = vX; }
+        vX = 0;
+
+        backgroundTile.setScrollDistance(vX);
+        stageObj.update(vX);
+
+        getReadyText.alpha = 1;
+        helpText.alpha = 1;
+
+        return true;
     }
-    vX = 0;
 
-    backgroundTile.setScrollDistance(vX);
+    else if (newState == GameState.PLAYING) {
+        console.log('new state playing');
+        // enable physics, hide help text
+        playerObj.startPhysics();
 
-    stageObj.update(vX);
+        getReadyText.alpha = 0;
+        helpText.alpha = 0;
+
+        return true;
+    }
+
+    return false;
 }
 
-function playerDie() {
+function onPlayerDeath() {
     soundHit.play();
-
     mpClient.sendDeathScore(vX);
-
-    currentGameState = GameState.START;
-    playerObj.stopPhysics();
-    playerObj.setLocation(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
-
-    scoreText.alpha = 1;
-
-    reset();
+    setGameState(GameState.START);
 }
 
 function preload() {
@@ -109,6 +137,7 @@ function preload() {
     this.load.audio('hit', ['assets/audio/hit.wav', 'assets/audio/hit.ogg']);
     this.load.audio('wing', ['assets/audio/wing.wav', 'assets/audio/wing.ogg']);
     this.load.audio('swoosh', ['assets/audio/swoosh.wav', 'assets/audio/swoosh.ogg']);
+    this.load.audio('soundtrack', ['assets/audio/soundtrack.mp3']);
 }
 
 function create() {
@@ -116,19 +145,22 @@ function create() {
     soundHit = this.sound.add('hit');
     soundWing = this.sound.add('wing');
     soundSwoosh = this.sound.add('swoosh');
+    [soundHit, soundWing, soundSwoosh].forEach((s) => s.volume = 0.5);
 
-    // ? GAME STATE
-    currentGameState = GameState.START;
+    soundtrack = this.sound.add('soundtrack');
+    soundtrack.volume = 0.1;
+    soundtrack.setLoop(true);
+    soundtrack.play();
+
     // ? BACKGROUND
     backgroundTile = new Backdrop(this, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, "space");
 
     // ? PLAYER
     playerObj = new Player(this, startLocation, true);
     playerObj.createParticle(this.add.particles('red'));
-    playerObj.stopPhysics();
 
     // ? STAGE
-    stageObj = new Stage(this, playerObj, playerDie);
+    stageObj = new Stage(this, playerObj, onPlayerDeath);
 
     // ? KEYBINDS
     keySpace = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
@@ -143,6 +175,16 @@ function create() {
     scoreText.depth = 1;
     scoreText.alpha = 0;
 
+    getReadyText = this.add.text(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 3, 'READY?', GET_READY_FONT);
+    getReadyText.depth = 1;
+    getReadyText.setOrigin(0.5, 0);
+
+    helpText = this.add.text(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 3 * 2, 'PRESS SPACE OR TAP', HELP_FONT);
+    helpText.depth = 1;
+    helpText.setOrigin(0.5, 1);
+
+    setGameState(GameState.START);
+
     // ? KILL FEED
     killFeedObj = new KillFeed(this, SCREEN_WIDTH - 10, 10);
 
@@ -153,21 +195,18 @@ function create() {
 function update(timeMs, delta) {
     const adjustedSpeed = VELOCITY * delta / 8.33
 
+    // ! Look for reset button trigger
     if (keyReset.isDown && !keyResetPressed) {
-        currentGameState = GameState.START;
-        playerObj.stopPhysics();
-        playerObj.setLocation(startLocation.x, startLocation.y);
-        reset();
+        setGameState(GameState.START);
         keyResetPressed = true;
     } else if (keyReset.isUp) {
         keyResetPressed = false;
     }
 
-    // ! Move player
+    // ! Look for start / jump button trigger
     if (keySpace.isDown || this.input.activePointer.isDown) {
         if (currentGameState == GameState.START) {
-            currentGameState = GameState.PLAYING;
-            playerObj.startPhysics();
+            setGameState(GameState.PLAYING);
         } else if (!keySpacePressed) {
             playerObj.jump();
             soundWing.play();
@@ -184,6 +223,7 @@ function update(timeMs, delta) {
 
         // ! Move background
         backgroundTile.setScrollDistance(vX);
+        backgroundTile.setParallaxDistance(playerObj.sprite.y, SCREEN_HEIGHT);
 
         stageObj.update(vX);
     }
@@ -230,12 +270,14 @@ function hookMultiplayerEvents(sceneRef) {
     });
 
     mpClient.onPlayerDie((obj) => {
-        const playerEntry = otherPlayers.find((p) => p.id == obj.id);
-        if (playerEntry) { 
-            playerEntry.sprite.alpha = 0;
-            playerEntry.sprite.x = 0;
-            playerEntry.sprite.y = 0;
-         }
+        if (obj.id != mpClient.id) {
+            const playerEntry = otherPlayers.find((p) => p.id == obj.id);
+            if (playerEntry) {
+                playerEntry.sprite.alpha = 0;
+                playerEntry.sprite.x = 0;
+                playerEntry.sprite.y = 0;
+            }
+        }
 
         killFeedObj.addKill((obj.id == mpClient.id) ? 'you' : obj.id, obj.score);
     });

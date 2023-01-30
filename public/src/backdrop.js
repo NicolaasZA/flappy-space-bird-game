@@ -4,6 +4,10 @@ class Backdrop {
      */
     sprite;
 
+    static PARALLAX_FACTOR_PERC = 0.05;
+
+    laxA = Backdrop.PARALLAX_FACTOR_PERC * 2;
+
     /**
      * @param {Phaser.Scene} scene
      * @param {number} x
@@ -22,5 +26,16 @@ class Backdrop {
      */
     setScrollDistance(x) {
         this.sprite.tilePositionX = x;
+    }
+
+    /**
+     * @param {number} playerY
+     * @param {number} screenHeight
+     */
+    setParallaxDistance(playerY, screenHeight) {
+        // -10 <-> 10% parallax based on player distance from center of screen
+        const laxPercent = (playerY / screenHeight * (Backdrop.PARALLAX_FACTOR_PERC * 2)) - Backdrop.PARALLAX_FACTOR_PERC;
+
+        this.sprite.tilePositionY = laxPercent * screenHeight;
     }
 }
