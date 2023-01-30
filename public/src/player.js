@@ -5,7 +5,8 @@ class Player {
     sprite;
 
     /** @type {Phaser.GameObjects.Particles.ParticleEmitter} */
-    particleEmitter;
+    trailEmitter;
+
 
     static GRAVITY = 980;
     static JUMP_POWER = 300;
@@ -41,23 +42,26 @@ class Player {
     stopPhysics() {
         this.sprite.setAccelerationY(0);
         this.sprite.setVelocity(0, 0);
-        
-        if (this.particleEmitter) {
-            this.particleEmitter.stop(true);
+
+        if (this.trailEmitter) {
+            this.trailEmitter.stop(true);
         }
     }
 
     startPhysics(velX = 0, velY = 0) {
         this.sprite.setVelocity(velX, velY);
         this.sprite.setAccelerationY(Player.GRAVITY);
-        
-        if (this.particleEmitter) {
-            this.particleEmitter.start();
+
+        if (this.trailEmitter) {
+            this.trailEmitter.start();
         }
     }
 
-    createParticle(manager) {
-        this.particleEmitter = manager.createEmitter({
+    /**
+     * @param {Phaser.GameObjects.Particles.ParticleEmitterManager} manager
+     */
+    createParticles(manager) {
+        this.trailEmitter = manager.createEmitter({
             speedX: -250,
             gravityY: Player.GRAVITY / 10,
             alpha: 0.8,
@@ -65,8 +69,7 @@ class Player {
             scale: { start: 0.2, end: 0 },
             blendMode: 'OVERLAY'
         });
-
-        this.particleEmitter.startFollow(this.sprite);
+        this.trailEmitter.startFollow(this.sprite);
     }
 
     updateAnimation() {

@@ -3,10 +3,6 @@ const SCREEN_WIDTH = Math.max(Math.min(document.body.clientWidth, 1024), 640);
 const SCREEN_HEIGHT = Math.max(Math.min(document.body.clientHeight, 768), 640);
 const startLocation = { x: SCREEN_WIDTH / 2, y: SCREEN_HEIGHT / 2 };
 
-const SPAWN_COOLDOWN_MS = 2000;
-const X_SCALE = 80;
-const PIPE_GAP = 60;
-const PIPE_WIDTH = 60;
 const VELOCITY = 2.2;
 
 let highest_score = 0;
@@ -41,6 +37,9 @@ const mpClient = new MultiplayerClient();
 
 /** @type {Stage} */
 let stageObj;
+
+/** @type {Phaser.GameObjects.Particles.ParticleEmitter} */
+let explosionEmitter;
 
 /** @type {Backdrop} */
 let backgroundTile;
@@ -87,14 +86,14 @@ var vX = 0;
 
 function setGameState(newState) {
     currentGameState = newState;
-    
+
     if (newState == GameState.START) {
-        console.log('new state start');
         playerObj.stopPhysics();
         playerObj.setLocation(startLocation.x, startLocation.y);
 
         if (vX > highest_score) { highest_score = vX; }
         vX = 0;
+
 
         backgroundTile.setScrollDistance(vX);
         stageObj.update(vX);
@@ -106,8 +105,6 @@ function setGameState(newState) {
     }
 
     else if (newState == GameState.PLAYING) {
-        console.log('new state playing');
-        // enable physics, hide help text
         playerObj.startPhysics();
 
         getReadyText.alpha = 0;
@@ -122,6 +119,7 @@ function setGameState(newState) {
 function onPlayerDeath() {
     soundHit.play();
     mpClient.sendDeathScore(vX);
+    explosionEmitter.explode(50, playerObj.sprite.x + vX, playerObj.sprite.y);
     setGameState(GameState.START);
 }
 
@@ -155,12 +153,26 @@ function create() {
     // ? BACKGROUND
     backgroundTile = new Backdrop(this, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, "space");
 
+    // ? PARTICLES
+    const redParicleManager = this.add.particles('red');
+    explosionEmitter = redParicleManager.createEmitter({
+        speed: { min: 400, max: 900 },
+        angle: { min: 0, max: 360 },
+        gravityY: Player.GRAVITY / 10,
+        alpha: 1,
+        lifespan: 300,
+        scale: { start: 0.3, end: 0 },
+        blendMode: 'SCREEN'
+    });
+    explosionEmitter.stop();
+
     // ? PLAYER
     playerObj = new Player(this, startLocation, true);
-    playerObj.createParticle(this.add.particles('red'));
+    playerObj.createParticles(redParicleManager);
 
     // ? STAGE
     stageObj = new Stage(this, playerObj, onPlayerDeath);
+    stageObj.addBoundaryBlocks(this, playerObj, onPlayerDeath);
 
     // ? KEYBINDS
     keySpace = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
@@ -183,16 +195,17 @@ function create() {
     helpText.depth = 1;
     helpText.setOrigin(0.5, 1);
 
-    setGameState(GameState.START);
-
     // ? KILL FEED
     killFeedObj = new KillFeed(this, SCREEN_WIDTH - 10, 10);
 
     // ? MP EVENTS
     hookMultiplayerEvents(this);
+
+    // ? GAME STATE
+    setGameState(GameState.START);
 }
 
-function update(timeMs, delta) {
+function update(_, delta) {
     const adjustedSpeed = VELOCITY * delta / 8.33
 
     // ! Look for reset button trigger
@@ -273,6 +286,8 @@ function hookMultiplayerEvents(sceneRef) {
         if (obj.id != mpClient.id) {
             const playerEntry = otherPlayers.find((p) => p.id == obj.id);
             if (playerEntry) {
+                explosionEmitter.explode(50, playerEntry.sprite.x, playerEntry.sprite.y);
+
                 playerEntry.sprite.alpha = 0;
                 playerEntry.sprite.x = 0;
                 playerEntry.sprite.y = 0;
