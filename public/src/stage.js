@@ -26,10 +26,9 @@ class Stage {
         fetch('http://' + window.location.hostname + ':' + window.location.port + '/stage')
             .then((res) => {
                 res.json().then((data) => {
-                    this.pipeData = data.slice(0, 3);
+                    this.pipeData = data.slice(0, 40);
 
                     this.pipeData.forEach((pipe) => {
-                        console.warn(pipe);
                         const startX = (SCREEN_WIDTH / 2) + pipe.x;
 
                         const topBounds = new Rect(
