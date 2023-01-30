@@ -13,7 +13,8 @@ class Backdrop {
      * @param {string} textureName
      */
     constructor(scene, x, y, w, h, textureName) {
-        this.sprite = scene.add.tileSprite(x, y, w, h, textureName)
+        this.sprite = scene.add.tileSprite(x, y, w, h, textureName);
+        this.sprite.setOrigin(0, 0);
     }
 
     /**
