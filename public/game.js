@@ -64,7 +64,7 @@ const game = new Phaser.Game({
     physics: {
         default: 'arcade',
         arcade: {
-            debug: false
+            debug: true
         }
     },
     fps: {
@@ -81,6 +81,9 @@ var scoreText;
 var highScoreText;
 
 var vX = 0;
+
+/** @type {Stage} */
+let stageObj;
 
 /** @type {Backdrop} */
 let backgroundTile;
@@ -103,13 +106,11 @@ var keyReset;
 var keyPause;
 
 let keySpacePressed = false;
+let keyResetPressed = false;
 
 var soundHit;
 var soundWing;
 var soundSwoosh;
-
-var stage = [];
-var pipes = [];
 
 function reset() {
     if (vX > highest_score) {
@@ -119,10 +120,7 @@ function reset() {
 
     backgroundTile.setScrollDistance(vX);
 
-    pipes.forEach((p) => {
-        p.top.x = p.startX - vX;
-        p.bottom.x = p.startX - vX;
-    });
+    stageObj.update(vX);
 }
 
 function playerDie() {
@@ -160,7 +158,6 @@ function create() {
 
     // ? GAME STATE
     currentGameState = GameState.START;
-
     // ? BACKGROUND
     backgroundTile = new Backdrop(this, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, "space");
 
@@ -210,72 +207,12 @@ function create() {
             const playerEntry = otherPlayers.find((p) => p.id == obj.id);
             if (playerEntry) { playerEntry.sprite.alpha = 0; }
 
-            killFeedObj.addKill( isMe ? 'you' : obj.id, obj.score);
+            killFeedObj.addKill(isMe ? 'you' : obj.id, obj.score);
         });
     }, 200);
 
-
-    // ? PIPES
-    fetch('http://' + window.location.hostname + ':' + window.location.port + '/stage')
-        .then((res) => {
-            res.json().then((d) => {
-                stage = d.slice(0, 40);
-
-                stage.forEach((pipe) => {
-                    const obj = {};
-
-                    const startX = (SCREEN_WIDTH / 2) + pipe.x;
-
-                    const topBounds = new Rect(
-                        startX, // left
-                        startX + PIPE_WIDTH, // right
-                        0, // top
-                        pipe.y - PIPE_GAP // bottom
-                    );
-                    const bottomBounds = new Rect(
-                        startX, // left
-                        startX + PIPE_WIDTH, // right
-                        pipe.y + PIPE_GAP, // top
-                        SCREEN_HEIGHT // bottom
-                    );
-
-                    const graphicsTop = this.add.graphics({ fillStyle: { color: 0xff0000 } });
-                    graphicsTop.x = topBounds.x;
-                    graphicsTop.y = topBounds.y;
-                    graphicsTop.w = topBounds.width;
-                    graphicsTop.h = topBounds.height;
-                    graphicsTop.fillRect(0, 0, topBounds.width, topBounds.height);
-                    this.physics.add.existing(graphicsTop);
-
-                    const graphicsBottom = this.add.graphics({ fillStyle: { color: 0xff0000 } });
-                    graphicsBottom.x = bottomBounds.x;
-                    graphicsBottom.y = bottomBounds.y;
-                    graphicsBottom.w = bottomBounds.width;
-                    graphicsBottom.h = bottomBounds.height;
-                    graphicsBottom.fillRect(0, 0, bottomBounds.width, bottomBounds.height);
-                    this.physics.add.existing(graphicsBottom);
-
-                    graphicsTop.body.immovable = true;
-                    graphicsBottom.body.immovable = true;
-
-                    graphicsTop.body.setSize(topBounds.width, topBounds.height);
-                    graphicsBottom.body.setSize(bottomBounds.width, bottomBounds.height);
-
-                    this.physics.add.collider(playerObj.sprite, graphicsTop, playerDie);
-                    this.physics.add.collider(playerObj.sprite, graphicsBottom, playerDie);
-
-                    obj['top'] = graphicsTop;
-                    obj['bottom'] = graphicsBottom;
-                    obj['startX'] = startX;
-
-                    this.physics.collide(graphicsTop, playerObj.sprite, () => console.warn('yes'));
-                    this.physics.collide(graphicsBottom, playerObj.sprite, () => console.warn('yes'));
-
-                    pipes.push(obj);
-                });
-                window.pipes = pipes;
-            });
-        });
+    // ? STAGE
+    stageObj = new Stage(this, playerObj, playerDie);
 
     // ? KEYBINDS
     keySpace = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
@@ -297,10 +234,14 @@ function create() {
 function update(timeMs, delta) {
     const adjustedSpeed = VELOCITY * delta / 8.33
 
-    if (keyReset.isDown) {
+    if (keyReset.isDown && !keyResetPressed) {
         currentGameState = GameState.START;
         playerObj.stopPhysics();
         playerObj.setLocation(startLocation.x, startLocation.y);
+        reset();
+        keyResetPressed = true;
+    } else if (keyReset.isUp) {
+        keyResetPressed = false;
     }
 
     // ! Move player
@@ -327,10 +268,7 @@ function update(timeMs, delta) {
         // ! Move background
         backgroundTile.setScrollDistance(vX);
 
-        pipes.forEach((p) => {
-            p.top.x = p.startX - vX;
-            p.bottom.x = p.startX - vX;
-        });
+        stageObj.update(vX);
     }
 
     playerObj.updateAnimation();
