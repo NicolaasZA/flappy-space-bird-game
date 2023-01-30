@@ -30,8 +30,8 @@ class Player {
     }
 
     /**
-     * @param {number} [x]
-     * @param {number} [y]
+     * @param {number} x
+     * @param {number} y
      */
     setLocation(x, y) {
         this.sprite.x = x;
