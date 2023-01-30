@@ -22,11 +22,11 @@ class Player {
      * @param {Phaser.Scene} scene
      * @param {{ x: number; y: number; }} startLocation
      */
-    constructor(scene, startLocation, collideWorldBounds = true) {
+    constructor(scene, startLocation, collideWorldBounds = true, inFront = true) {
         this.sprite = scene.physics.add.image(startLocation.x, startLocation.y, Player.FRAMES.FRONT.name)
 
         this.sprite.setCollideWorldBounds(collideWorldBounds);
-        this.sprite.depth = 1;
+        this.sprite.depth = inFront ? 2 : 1;
     }
 
     /**

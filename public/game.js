@@ -83,17 +83,22 @@ var scoreText;
 var highScoreText;
 
 var vX = 0;
-var isPoweredUp = false;
-var graphics;
 
 /** @type {Player} */
 let playerObj;
+/** @type {Array<Player>} */
+const otherPlayers = [];
 
 let currentGameState = GameState.START;
 
+/** @type {Phaser.Input.Keyboard.Key} */
 var keySpace;
+/** @type {Phaser.Input.Keyboard.Key} */
 var keyReset;
+/** @type {Phaser.Input.Keyboard.Key} */
 var keyPause;
+
+let keySpacePressed = false;
 
 var soundHit;
 var soundWing;
@@ -101,7 +106,7 @@ var soundSwoosh;
 
 var stage = [];
 var pipes = [];
-var players = [];
+// var players = [];
 
 var killFeedTexts = [];
 var killFeed = [];
@@ -202,32 +207,39 @@ function create() {
 
         window['socket'].on('move', (obj) => {
             if (obj.id != window['socket'].id) {
-                let playerEntry = players.find((p) => p.id == obj.id);
+                let playerEntry = otherPlayers.find((p) => p.id == obj.id);
                 if (!playerEntry) {
-                    playerEntry = { id: obj.id, sprite: this.physics.add.image(obj.location.x, obj.location.y, Player.FRAMES.FRIENDS.name) };
-                    playerEntry.sprite.setCollideWorldBounds(false);
-                    players.push(playerEntry);
-                    console.warn('creating', obj.id, playerEntry);
+                    playerEntry = new Player(this, startLocation, false, false);
+                    playerEntry.id = obj.id;
+                    playerEntry.sprite.setTexture(Player.FRAMES.FRIENDS.name);
+                    playerEntry.stopPhysics();
+
+                    otherPlayers.push(playerEntry);
+                    console.warn('Creating', obj.id, playerEntry);
                 }
 
-                playerEntry.sprite.x = (SCREEN_WIDTH / 2) + obj.location.x - vX;
-                playerEntry.sprite.y = obj.location.y;
+                playerEntry.sprite.alpha = 1;
+                playerEntry.setLocation(startLocation.x + obj.location.x - vX, obj.location.y);
             }
         });
 
         window['socket'].on('leave', (playerId) => {
             if (playerId != window['socket'].id) {
-                const playerEntry = players.find((p) => p.id == playerId);
-                console.log('disconnected', playerId, playerEntry);
+                const playerEntry = otherPlayers.find((p) => p.id == playerId);
                 if (playerEntry) {
                     playerEntry.sprite.alpha = 0;
                     playerEntry.sprite.destroy();
+                    console.log('Destroying', playerId, playerEntry);
                 }
             }
         })
 
         window['socket'].on('die', (obj) => {
             const isMe = obj.id == window['socket'].id;
+                
+            const playerEntry = otherPlayers.find((p) => p.id == obj.id);
+            if (playerEntry) { playerEntry.sprite.alpha = 0; }
+
             killFeed.unshift({ id: isMe ? 'you' : obj.id, score: obj.score, expires: Date.now() + KILL_FEED_TIMEOUT_MS });
         });
     }, 200);
@@ -337,10 +349,13 @@ function update(timeMs, delta) {
         if (currentGameState == GameState.START) {
             currentGameState = GameState.PLAYING;
             playerObj.startPhysics();
-        } else {
+        } else if (!keySpacePressed) {
             playerObj.jump();
             soundWing.play();
+            keySpacePressed = true;
         }
+    } else {
+        keySpacePressed = false;
     }
 
     if (currentGameState == GameState.PLAYING) {
