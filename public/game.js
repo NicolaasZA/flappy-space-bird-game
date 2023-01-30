@@ -85,6 +85,9 @@ var vX = 0;
 /** @type {Backdrop} */
 let backgroundTile;
 
+/** @type {KillFeed} */
+let killFeedObj;
+
 /** @type {Player} */
 let playerObj;
 /** @type {Array<Player>} */
@@ -107,12 +110,6 @@ var soundSwoosh;
 
 var stage = [];
 var pipes = [];
-// var players = [];
-
-var killFeedTexts = [];
-var killFeed = [];
-window.killFeed = killFeed;
-var feedContext;
 
 function reset() {
     if (vX > highest_score) {
@@ -139,28 +136,6 @@ function playerDie() {
     scoreText.alpha = 1;
 
     reset();
-}
-
-
-
-function padded(val, len) {
-    let result = (val ?? '') + '';
-    while (result.length < len) {
-        result = '0' + result;
-    }
-    return result;
-}
-
-function updateKillFeed() {
-    killFeed = killFeed.filter((entry) => entry.expires > Date.now());
-
-    const drawable = killFeed.slice(0, 4).map((e) => e.id.slice(0, 4) + ' 💀 ' + padded(Math.floor(e.score), 4));
-    while (drawable.length < 4) {
-        drawable.push('');
-    }
-    drawable.forEach((entry, idx) => {
-        killFeedTexts[idx].text = entry;
-    });
 }
 
 function preload() {
@@ -235,7 +210,7 @@ function create() {
             const playerEntry = otherPlayers.find((p) => p.id == obj.id);
             if (playerEntry) { playerEntry.sprite.alpha = 0; }
 
-            killFeed.unshift({ id: isMe ? 'you' : obj.id, score: obj.score, expires: Date.now() + KILL_FEED_TIMEOUT_MS });
+            killFeedObj.addKill( isMe ? 'you' : obj.id, obj.score);
         });
     }, 200);
 
@@ -315,19 +290,8 @@ function create() {
     scoreText.depth = 1;
     scoreText.alpha = 0;
 
-    // deltaText = this.add.text(10, 90, '', FONT_OBJ);
-
-    killFeedTexts = [
-        this.add.text(SCREEN_WIDTH - 10, 10, '-', FONT_OBJ_FEED),
-        this.add.text(SCREEN_WIDTH - 10, 35, '-', FONT_OBJ_FEED),
-        this.add.text(SCREEN_WIDTH - 10, 60, '-', FONT_OBJ_FEED),
-        this.add.text(SCREEN_WIDTH - 10, 85, '-', FONT_OBJ_FEED)
-    ];
-    window.killFeedTexts = killFeedTexts;
-    killFeedTexts.forEach((t) => {
-        t.setOrigin(1, 0);
-        t.depth = 1;
-    });
+    // ? KILL FEED
+    killFeedObj = new KillFeed(this, SCREEN_WIDTH - 10, 10);
 }
 
 function update(timeMs, delta) {
@@ -336,7 +300,7 @@ function update(timeMs, delta) {
     if (keyReset.isDown) {
         currentGameState = GameState.START;
         playerObj.stopPhysics();
-        playerObj.setLocation()
+        playerObj.setLocation(startLocation.x, startLocation.y);
     }
 
     // ! Move player
@@ -376,6 +340,6 @@ function update(timeMs, delta) {
     scoreText.text = '' + Math.round(vX);
 
     // ! KillFeed
-    updateKillFeed();
+    killFeedObj.update();
 
 }
