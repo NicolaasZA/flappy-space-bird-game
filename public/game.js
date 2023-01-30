@@ -4,7 +4,6 @@ const SCREEN_HEIGHT = Math.max(Math.min(document.body.clientHeight, 768), 640);
 const startLocation = { x: SCREEN_WIDTH / 2, y: SCREEN_HEIGHT / 2 };
 
 const SPAWN_COOLDOWN_MS = 2000;
-const KILL_FEED_TIMEOUT_MS = 3000;
 const X_SCALE = 80;
 const PIPE_GAP = 60;
 const PIPE_WIDTH = 60;
@@ -12,50 +11,7 @@ const VELOCITY = 2.2;
 
 let highest_score = 0;
 
-class GameState {
-    static START = 0;
-    static PLAYING = 1;
-}
-
-class Rect {
-    left = 0;
-    right = 0;
-    top = 0;
-    bottom = 0;
-
-    x = 0;
-    y = 0;
-    width = 0;
-    height = 0;
-
-    constructor(l, r, t, b, originOffset = false) {
-        this.left = l;
-        this.right = r;
-        this.top = t;
-        this.bottom = b;
-
-        this.width = Math.abs(this.right - this.left);
-        this.height = Math.abs(this.bottom - this.top);
-
-        if (originOffset) {
-            this.x = l + (this.width / 2);
-            this.y = t + (this.height / 2);
-        } else {
-            this.x = l + 0;
-            this.y = t + 0;
-        }
-
-    }
-
-    scale(scalar) {
-
-    }
-}
-
 const FONT_OBJ = { fontFamily: 'bahaha, cursive', fontSize: '48px' };
-const FONT_OBJ_FEED = { fontFamily: 'bahaha, cursive', fontSize: '22px' };
-
-console.log('FLAPPY', `${SCREEN_WIDTH}x${SCREEN_HEIGHT}`);
 
 const game = new Phaser.Game({
     type: Phaser.AUTO,
@@ -76,6 +32,7 @@ const game = new Phaser.Game({
         update
     }
 });
+console.log('FLAPPY', `${SCREEN_WIDTH}x${SCREEN_HEIGHT}`);
 
 var scoreText;
 var highScoreText;

@@ -2,6 +2,9 @@
 <html>
 
 <head>
+    <script src="./lib/phaser-arcade-physics.js"></script>
+    <script src="./lib/socket.io.min.js"></script>
+
     <title>Space Flappy Bird Thing</title>
     <link rel="icon" type="image/x-icon" href="./assets/favicon.ico">
     <style>
@@ -16,8 +19,9 @@
             background: #1b1b1b;
         }
     </style>
-    <script src="./lib/phaser-arcade-physics.js"></script>
-    <script src="./lib/socket.io.min.js"></script>
+
+    <script src="./src/util.js"></script>
+    <script src="./src/multiplayer.js"></script>
     <script src="./src/backdrop.js"></script>
     <script src="./src/killfeed.js"></script>
     <script src="./src/player.js"></script>
