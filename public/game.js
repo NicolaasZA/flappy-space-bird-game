@@ -219,11 +219,11 @@ function update(_, delta) {
 
 function hookMultiplayerEvents(sceneRef) {
     mpClient.onPlayerMove((obj) => {
-        if (obj.id != mpClient.id) {
-            let playerEntry = otherPlayers.find((p) => p.id == obj.id);
+        if (obj.playerId != mpClient.id) {
+            let playerEntry = otherPlayers.find((p) => p.playerId == obj.id);
             if (!playerEntry) {
                 playerEntry = new Player(sceneRef, startLocation, false, false);
-                playerEntry.convertToOtherPlayer(obj.id);
+                playerEntry.convertToOtherPlayer(obj.playerId);
                 otherPlayers.push(playerEntry);
             }
 
@@ -234,7 +234,7 @@ function hookMultiplayerEvents(sceneRef) {
 
     mpClient.onPlayerLeave((playerId) => {
         if (playerId != mpClient.id) {
-            const playerEntry = otherPlayers.find((p) => p.id == playerId);
+            const playerEntry = otherPlayers.find((p) => p.playerId == playerId);
             if (playerEntry) {
                 playerEntry.dispose(true);
             }
@@ -242,14 +242,14 @@ function hookMultiplayerEvents(sceneRef) {
     });
 
     mpClient.onPlayerDie((obj) => {
-        if (obj.id != mpClient.id) {
-            const playerEntry = otherPlayers.find((p) => p.id == obj.id);
+        if (obj.playerId != mpClient.id) {
+            const playerEntry = otherPlayers.find((p) => p.playerId == obj.playerId);
             if (playerEntry) {
                 explosionEmitter.explode(50, playerEntry.sprite.x, playerEntry.sprite.y);
                 playerEntry.dispose();
             }
         }
 
-        killFeedObj.addKill((obj.id == mpClient.id) ? 'you' : obj.id, obj.score);
+        killFeedObj.addKill((obj.playerId == mpClient.id) ? 'YOU' : obj.playerId, obj.score);
     });
 }

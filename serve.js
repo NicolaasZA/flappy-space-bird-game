@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const http = require('http');
 const { Server } = require("socket.io");
+const { PlayerMovePayload, PlayerDiePayload } = require('./public/src/server');
 
 const randX = (min, max) => {
     return Math.floor(Math.random() * (max - min + 1) + min)
@@ -56,20 +57,21 @@ io.on('connection', (socket) => {
     io.emit('new', socket.id);
     console.log('new', socket.id);
 
-    socket.on('move', (newLocation) => {
-        io.emit('move', { id: socket.id, location: newLocation });
-
+    socket.on('move', (/** @type {PlayerMovePayload} */ payload) => {
+        payload.playerId = socket.id;
+        io.emit('move', payload);
     });
 
     socket.on('die', (score) => {
-        console.log('die', { id: socket.id, score: score });
-        io.emit('die', { id: socket.id, score });
+        const payload = new PlayerDiePayload(socket.id, score);
+        console.log('die', payload);
+        io.emit('die', payload);
     });
 
     socket.on('disconnect', () => {
         console.log('leave', socket.id);
         io.emit('leave', socket.id);
-    })
+    });
 });
 
 // ! SERVE

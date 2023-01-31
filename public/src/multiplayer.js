@@ -1,4 +1,3 @@
-
 class MultiplayerClient {
     /** @type {SocketInterface} */
     socket;
@@ -19,11 +18,14 @@ class MultiplayerClient {
     /**
      * Send your location to other clients
      * @param {number} virtualX
-     * @param {number} y
+     * @param {number} screenY
+     * @param {number} velocityX
+     * @param {number} velocityY
      */
-    sendLocation(virtualX, y) {
+    sendLocation(virtualX, screenY, velocityX, velocityY) {
         if (this.socket.connected) {
-            this.socket.emit('move', { x: virtualX, y });
+            const payload = new PlayerMovePayload(new Point(virtualX, screenY), new Point(velocityX, velocityY));
+            this.socket.emit('move', payload);
         } else {
             console.warn('not connected');
         }
@@ -43,7 +45,7 @@ class MultiplayerClient {
     }
 
     /**
-     * @param {(data: PlayerMoveEvent) => void} callback
+     * @param {(data: PlayerMovePayload) => void} callback
      */
     onPlayerMove(callback) {
         this.socket.on('move', callback);
@@ -57,7 +59,7 @@ class MultiplayerClient {
     }
 
     /**
-     * @param {(data: PlayerDeathEvent) => void} callback
+     * @param {(data: PlayerDiePayload) => void} callback
      */
     onPlayerDie(callback) {
         this.socket.on('die', callback);
@@ -84,16 +86,30 @@ class SocketInterface {
     on(eventName, callback) { }
 }
 
-class PlayerMoveEvent {
-    /** @type {string} */
-    id;
-    /** @type {{x: number; y: number}} */
-    location;
-}
-
-class PlayerDeathEvent {
-    /** @type {string} */
-    id;
+class PlayerDiePayload {
+    /** @type {Vector} */
+    playerId;
     /** @type {number} */
     score;
+
+    constructor(playerId, score) { this.playerId = playerId; this.score = score; }
+} 
+
+class PlayerMovePayload {
+    /** @type {string} */
+    playerId;
+    /** @type {Point} */
+    location;
+    /** @type {Point} */
+    velocity;
+
+    /**
+     * @param {Point} location 
+     * @param {Point} velocity 
+     */
+    constructor(location, velocity) {
+        this.location = location;
+        this.velocity = velocity;
+    }
+
 }

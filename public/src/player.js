@@ -1,5 +1,7 @@
 class Player {
-    id = '';
+
+    /** @type {string} */
+    id;
 
     /** @type {Phaser.Physics.Arcade.Image} */
     sprite;
@@ -7,10 +9,8 @@ class Player {
     /** @type {Phaser.GameObjects.Particles.ParticleEmitter} */
     trailEmitter;
 
-
     static GRAVITY = 980;
     static JUMP_POWER = 300;
-
     static FRAMES = {
         FRIENDS: { key: 1, name: 'player-others', angle: 0 },
         UP: { key: 0, name: 'player-up', angle: -45 },
