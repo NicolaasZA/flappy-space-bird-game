@@ -58,13 +58,15 @@ app.get('/res', (req, res) => {
 });
 
 // ! CREATE SOCKET SERVER
-let playerCount = 0;
+let players = {};
+
+const playerCount = () => Object.keys(players).length;
 
 io.on('connection', (socket) => {
     logEvent('new', socket.id);
+    players[socket.id] = socket.id;
 
-    playerCount += 1;
-    io.emit('new', new PlayerChangePayload(socket.id, playerCount));
+    io.emit('new', new PlayerChangePayload(socket.id, playerCount()));
 
     socket.on('move', (/** @type {PlayerMovePayload} */ payload) => {
         payload.playerId = socket.id;
@@ -78,15 +80,24 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        playerCount -= 1;
-        const payload = new PlayerChangePayload(socket.id, playerCount);
+        delete players[socket.id];
+        const payload = new PlayerChangePayload(socket.id, playerCount());
         logEvent('leave', socket.id, payload);
         io.emit('leave', payload);
     });
 
     socket.on('count', () => {
-        socket.emit('count', playerCount);
+        socket.emit('count', playerCount());
     })
+
+    socket.on('playerlist', () => {
+        socket.emit('playerlist', players);
+    })
+
+    socket.on('iam', (nickname) => {
+        logEvent('iam', socket.id, nickname);
+        players[socket.id] = nickname ?? socket.id;
+    });
 });
 
 // ! SERVE
