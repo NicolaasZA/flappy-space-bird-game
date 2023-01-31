@@ -64,13 +64,13 @@ var keyPause;
 let keySpacePressed = false;
 let keyResetPressed = false;
 
-/** @type {Phaser.Sound.NoAudioSound | Phaser.Sound.HTML5AudioSound | Phaser.Sound.WebAudioSound} */
+/** @type {Phaser.Sound.HTML5AudioSound | Phaser.Sound.WebAudioSound} */
 var soundHit;
-/** @type {Phaser.Sound.NoAudioSound | Phaser.Sound.HTML5AudioSound | Phaser.Sound.WebAudioSound} */
+/** @type {Phaser.Sound.HTML5AudioSound | Phaser.Sound.WebAudioSound} */
 var soundWing;
-/** @type {Phaser.Sound.NoAudioSound | Phaser.Sound.HTML5AudioSound | Phaser.Sound.WebAudioSound} */
+/** @type {Phaser.Sound.HTML5AudioSound | Phaser.Sound.WebAudioSound} */
 var soundSwoosh;
-/** @type {Phaser.Sound.NoAudioSound | Phaser.Sound.HTML5AudioSound | Phaser.Sound.WebAudioSound} */
+/** @type {Phaser.Sound.HTML5AudioSound | Phaser.Sound.WebAudioSound} */
 var soundtrack;
 
 var vX = 0;
@@ -178,6 +178,7 @@ function create() {
     // ? UI
     uiObj = new UserInterface();
     uiObj.create(this);
+    uiObj.setPlayerName(mpClient.id.slice(0, 4));
 
     // ? KILL FEED
     killFeedObj = new KillFeed(this, SCREEN_WIDTH - 10, 10);
@@ -222,9 +223,10 @@ function update(_, delta) {
     }
 
     playerObj.updateAnimation();
-    uiObj.setScore(Math.round(vX));
-    killFeedObj.update();
 
+    uiObj.setScore(Math.round(vX));
+    
+    killFeedObj.update();
 }
 
 function hookMultiplayerEvents(sceneRef) {
@@ -269,5 +271,8 @@ function hookMultiplayerEvents(sceneRef) {
         killFeedObj.addKill((obj.playerId == mpClient.id) ? 'YOU' : obj.playerId, obj.score);
     });
 
-    mpClient.startPlayerCountSync((count) => uiObj.setPlayerCount(count));
+    mpClient.startPlayerListSync((players) => {
+        uiObj.setPlayerCount(Object.keys(players).length);
+        uiObj.setPlayerList(players);
+    });
 }

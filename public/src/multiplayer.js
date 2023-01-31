@@ -81,6 +81,15 @@ class MultiplayerClient {
         this.playerCountInterval = setInterval(() => this.socket.emit('count'), 2000);
         this.socket.on('count', callback);
     }
+
+    /**
+     * @param {(players: object) => void} callback
+     */
+    startPlayerListSync(callback) {
+        this.socket.emit('playerlist');
+        this.playerListInterval = setInterval(() => this.socket.emit('playerlist'), 3000);
+        this.socket.on('playerlist', callback);
+    }
 }
 
 class SocketInterface {

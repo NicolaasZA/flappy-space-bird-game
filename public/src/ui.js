@@ -8,6 +8,8 @@ class UserInterface {
     helpText;
     /** @type {Phaser.GameObjects.Text} */
     playerCountText;
+    /** @type {Phaser.GameObjects.Text} */
+    playerNameText;
 
     /** @type {Phaser.Types.GameObjects.Text.TextStyle} */
     static SCORE_FONT = { fontFamily: 'bahaha, cursive', fontSize: '48px' };
@@ -37,9 +39,13 @@ class UserInterface {
         this.helpText.depth = 1;
         this.helpText.setOrigin(0.5, 1);
 
-        this.playerCountText = sceneRef.add.text(10, SCREEN_HEIGHT - 10, 'N/A Online', UserInterface.SMALL_FONT);
+        this.playerCountText = sceneRef.add.text(10, SCREEN_HEIGHT - 10, 'N/A Playing', UserInterface.SMALL_FONT);
         this.playerCountText.depth = 1;
         this.playerCountText.setOrigin(0, 1);
+
+        this.playerNameText = sceneRef.add.text(10, SCREEN_HEIGHT - 35, 'You are ____', UserInterface.SMALL_FONT);
+        this.playerNameText.depth = 1;
+        this.playerNameText.setOrigin(0, 1);
     }
 
     /**
@@ -61,7 +67,15 @@ class UserInterface {
         this.helpText.alpha = isVisible ? 1 : 0;
     }
 
+    setPlayerName(playerName) {
+        this.playerNameText.text = 'You are ' + playerName;
+    }
+
     setPlayerCount(playerCount) {
-        this.playerCountText.text = playerCount + ' Online';
+        this.playerCountText.text = playerCount + ' Playing';
+    }
+
+    setPlayerList(players) {
+        // TODO
     }
 }
