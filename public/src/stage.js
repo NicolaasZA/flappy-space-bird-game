@@ -3,6 +3,7 @@ class Stage {
     /** @type {Phaser.Scene} */
     sceneRef;
 
+    /** @type {Array<Point>} */
     pipeData = [];
 
     /** @type {Array<StagePipe>} */
@@ -10,7 +11,6 @@ class Stage {
 
     static PIPE_GAP = 60;
     static PIPE_WIDTH = 50;
-    static BOUNDARY_THICKNESS = 3;
 
     /**
      * @param {Phaser.Scene} scene
@@ -31,20 +31,7 @@ class Stage {
                     this.pipeData.forEach((pipe) => {
                         const startX = (SCREEN_WIDTH / 2) + pipe.x;
 
-                        const topBounds = new Rect(
-                            startX, // left
-                            startX + Stage.PIPE_WIDTH, // right
-                            0, // top
-                            pipe.y - Stage.PIPE_GAP // bottom
-                        );
-                        const bottomBounds = new Rect(
-                            startX, // left
-                            startX + Stage.PIPE_WIDTH, // right
-                            pipe.y + Stage.PIPE_GAP, // top
-                            SCREEN_HEIGHT // bottom
-                        );
-
-                        const pipeEntry = new StagePipe(scene, topBounds, bottomBounds, startX);
+                        const pipeEntry = new StagePipe(scene, startX, pipe.y);
                         pipeEntry.addPlayerCollisionListener(scene, player, onCollisionCallback);
 
                         this.pipes.push(pipeEntry);
@@ -72,9 +59,6 @@ class Stage {
      * @param {() => void} callback
      */
     addBoundaryBlocks(sceneRef, player, callback) {
-        const topBounds = new Rect(0, SCREEN_WIDTH, 0, Stage.BOUNDARY_THICKNESS);
-        const bottomBounds = new Rect(0, SCREEN_WIDTH, SCREEN_HEIGHT - Stage.BOUNDARY_THICKNESS, SCREEN_HEIGHT);
-
         const callbackWrapper = () => {
             try {
                 callback();
@@ -83,7 +67,7 @@ class Stage {
             }
         };
 
-        this.boundaryPipe = new StagePipe(sceneRef, topBounds, bottomBounds, 0, false);
+        this.boundaryPipe = new StagePipe(sceneRef, 0, 0, true);
         this.boundaryPipe.addPlayerCollisionListener(sceneRef, player, callbackWrapper);
     }
 }
@@ -101,15 +85,47 @@ class StagePipe {
     /** @type {number} */
     startX;
 
+    static BOUNDARY_THICKNESS = 3;
+
+    /**
+     * @param {Phaser.Scene} sceneRef
+     * @param {number} startX
+     * @param {number} openingY
+     */
+    constructor(sceneRef, startX, openingY, isBoundaryPipes = false) {
+        this.startX = startX;
+        this.openingY = openingY;
+
+        let topBounds, bottomBounds;
+        if (isBoundaryPipes) {
+            // ! Generate bounds for the top and bottom sides of the game area.
+            topBounds = new Rect(startX, SCREEN_WIDTH, 0, StagePipe.BOUNDARY_THICKNESS);
+            bottomBounds = new Rect(startX, SCREEN_WIDTH, SCREEN_HEIGHT - StagePipe.BOUNDARY_THICKNESS, SCREEN_HEIGHT);
+        } else {
+            // ! Generate bottom and top pipe sizes and locations
+            topBounds = new Rect(
+                startX, // left
+                startX + Stage.PIPE_WIDTH, // right
+                0, // top
+                openingY - Stage.PIPE_GAP // bottom
+            );
+            bottomBounds = new Rect(
+                startX, // left
+                startX + Stage.PIPE_WIDTH, // right
+                openingY + Stage.PIPE_GAP, // top
+                SCREEN_HEIGHT // bottom
+            );
+        }
+
+        this.fromBounds(sceneRef, topBounds, bottomBounds, !isBoundaryPipes);
+    }
+
     /**
      * @param {Phaser.Scene} sceneRef
      * @param {Rect} topBounds
      * @param {Rect} bottomBounds
-     * @param {number} startX
      */
-    constructor(sceneRef, topBounds, bottomBounds, startX, visible = true) {
-        this.startX = startX;
-
+    fromBounds(sceneRef, topBounds, bottomBounds, visible = true) {
         // ! Draw shapes
         this.top = sceneRef.add.graphics({ fillStyle: { color: 0xff0000 } });
         this.top.x = topBounds.x;
