@@ -2,10 +2,18 @@ const express = require('express');
 const cors = require('cors');
 const http = require('http');
 const { Server } = require("socket.io");
-const { PlayerMovePayload, PlayerDiePayload } = require('./public/src/server');
+const { PlayerMovePayload, PlayerDiePayload, PlayerChangePayload } = require('./public/src/server');
 
 const randX = (min, max) => {
     return Math.floor(Math.random() * (max - min + 1) + min)
+}
+
+const logEvent = (eventName, id, payload = null) => {
+    if (payload) {
+        console.log(`[${id}] ${eventName} |`, payload);
+    } else {
+        console.log(`[${id}] ${eventName}`);
+    }
 }
 
 // ! GENERATE STAGE
@@ -52,10 +60,13 @@ app.get('/res', (req, res) => {
 });
 
 // ! CREATE SOCKET SERVER
+let playerCount = 0;
 
 io.on('connection', (socket) => {
-    io.emit('new', socket.id);
-    console.log('new', socket.id);
+    logEvent('new', socket.id);
+
+    playerCount += 1;
+    io.emit('new', new PlayerChangePayload(socket.id, playerCount));
 
     socket.on('move', (/** @type {PlayerMovePayload} */ payload) => {
         payload.playerId = socket.id;
@@ -64,14 +75,20 @@ io.on('connection', (socket) => {
 
     socket.on('die', (score) => {
         const payload = new PlayerDiePayload(socket.id, score);
-        console.log('die', payload);
+        logEvent('die', socket.id, payload);
         io.emit('die', payload);
     });
 
     socket.on('disconnect', () => {
-        console.log('leave', socket.id);
-        io.emit('leave', socket.id);
+        playerCount -= 1;
+        const payload = new PlayerChangePayload(socket.id, playerCount);
+        logEvent('leave', socket.id, payload);
+        io.emit('leave', payload);
     });
+
+    socket.on('count', () => {
+        socket.emit('count', playerCount);
+    })
 });
 
 // ! SERVE

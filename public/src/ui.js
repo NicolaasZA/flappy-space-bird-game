@@ -6,6 +6,8 @@ class UserInterface {
     getReadyText;
     /** @type {Phaser.GameObjects.Text} */
     helpText;
+    /** @type {Phaser.GameObjects.Text} */
+    playerCountText;
 
     /** @type {Phaser.Types.GameObjects.Text.TextStyle} */
     static SCORE_FONT = { fontFamily: 'bahaha, cursive', fontSize: '48px' };
@@ -13,6 +15,8 @@ class UserInterface {
     static GET_READY_FONT = { fontFamily: 'bahaha, cursive', fontSize: '64px', color: '#ff0000' };
     /** @type {Phaser.Types.GameObjects.Text.TextStyle} */
     static HELP_FONT = { fontFamily: 'bahaha, cursive', fontSize: '48px', color: '#ffffff' };
+    /** @type {Phaser.Types.GameObjects.Text.TextStyle} */
+    static SMALL_FONT = { fontFamily: 'bahaha, cursive', fontSize: '22px', color: '#cccccc' };
 
     static HELP_TEXT = 'PRESS SPACE OR TAP';
     static GET_READY_TEXT = 'START';
@@ -32,6 +36,10 @@ class UserInterface {
         this.helpText = sceneRef.add.text(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 3 * 2, UserInterface.HELP_TEXT, UserInterface.HELP_FONT);
         this.helpText.depth = 1;
         this.helpText.setOrigin(0.5, 1);
+
+        this.playerCountText = sceneRef.add.text(10, SCREEN_HEIGHT - 10, 'N/A Online', UserInterface.SMALL_FONT);
+        this.playerCountText.depth = 1;
+        this.playerCountText.setOrigin(0, 1);
     }
 
     /**
@@ -51,5 +59,9 @@ class UserInterface {
     setStartTextVisible(isVisible) {
         this.getReadyText.alpha = isVisible ? 1 : 0;
         this.helpText.alpha = isVisible ? 1 : 0;
+    }
+
+    setPlayerCount(playerCount) {
+        this.playerCountText.text = playerCount + ' Online';
     }
 }

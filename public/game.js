@@ -1,6 +1,6 @@
 
-const SCREEN_WIDTH = Math.max(Math.min(document.body.clientWidth, 1024), 640);
-const SCREEN_HEIGHT = Math.max(Math.min(document.body.clientHeight, 768), 640);
+const SCREEN_WIDTH = 1024;
+const SCREEN_HEIGHT = 720;
 const startLocation = { x: SCREEN_WIDTH / 2, y: SCREEN_HEIGHT / 2 };
 
 const VELOCITY = 2.2;
@@ -8,7 +8,7 @@ const VELOCITY = 2.2;
 let highest_score = 0;
 
 const game = new Phaser.Game({
-    type: Phaser.AUTO,
+    type: Phaser.CANVAS,
     width: SCREEN_WIDTH,
     height: SCREEN_HEIGHT,
     physics: {
@@ -17,6 +17,7 @@ const game = new Phaser.Game({
             debug: false
         }
     },
+    canvas: document.getElementById('game-canvas'),
     fps: {
         target: 30
     },
@@ -242,13 +243,18 @@ function hookMultiplayerEvents(sceneRef) {
         }
     });
 
-    mpClient.onPlayerLeave((playerId) => {
-        if (playerId != mpClient.id) {
-            const playerEntry = otherPlayers.find((p) => p.playerId == playerId);
+    mpClient.onPlayerJoin((obj) => {
+        uiObj.setPlayerCount(obj.playerCount);
+    });
+
+    mpClient.onPlayerLeave((obj) => {
+        if (obj.playerId != mpClient.id) {
+            const playerEntry = otherPlayers.find((p) => p.playerId == obj.playerId);
             if (playerEntry) {
                 playerEntry.dispose(true);
             }
         }
+        uiObj.setPlayerCount(obj.playerCount);
     });
 
     mpClient.onPlayerDie((obj) => {
@@ -262,4 +268,6 @@ function hookMultiplayerEvents(sceneRef) {
 
         killFeedObj.addKill((obj.playerId == mpClient.id) ? 'YOU' : obj.playerId, obj.score);
     });
+
+    mpClient.startPlayerCountSync((count) => uiObj.setPlayerCount(count));
 }

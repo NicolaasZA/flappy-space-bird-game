@@ -52,10 +52,17 @@ class MultiplayerClient {
     }
 
     /**
-     * @param {(playerId: string) => void} callback
+     * @param {(data: PlayerChangePayload) => void} callback
      */
     onPlayerLeave(callback) {
         this.socket.on('leave', callback);
+    }
+
+    /**
+     * @param {(data: PlayerChangePayload) => void} callback
+     */
+    onPlayerJoin(callback) {
+        this.socket.on('join', callback);
     }
 
     /**
@@ -63,6 +70,16 @@ class MultiplayerClient {
      */
     onPlayerDie(callback) {
         this.socket.on('die', callback);
+    }
+
+
+    /**
+     * @param {(count: number) => void} callback
+     */
+    startPlayerCountSync(callback) {
+        this.socket.emit('count');
+        this.playerCountInterval = setInterval(() => this.socket.emit('count'), 2000);
+        this.socket.on('count', callback);
     }
 }
 
@@ -112,4 +129,11 @@ class PlayerMovePayload {
         this.velocity = velocity;
     }
 
+}
+
+class PlayerChangePayload {
+    /** @type {string} */
+    playerId;
+    /** @type {number} */
+    playerCount;
 }

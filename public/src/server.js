@@ -16,6 +16,15 @@ class PlayerMovePayload {
     velocity;
 }
 
+class PlayerChangePayload {
+    /** @type {string} */
+    playerId;
+    /** @type {number} */
+    playerCount;
+
+    constructor(playerId, playerCount) { this.playerId = playerId; this.playerCount = playerCount; }
+}
+
 class Vector {
     /** @type {number} */
     x;
@@ -26,5 +35,6 @@ class Vector {
 module.exports = {
     PlayerDiePayload,
     PlayerMovePayload,
+    PlayerChangePayload,
     Vector
 }
