@@ -76,8 +76,6 @@ var soundtrack;
 /** @type {Phaser.GameObjects.Text} */
 var scoreText;
 /** @type {Phaser.GameObjects.Text} */
-var highScoreText;
-/** @type {Phaser.GameObjects.Text} */
 var getReadyText;
 /** @type {Phaser.GameObjects.Text} */
 var helpText;
@@ -93,7 +91,6 @@ function setGameState(newState) {
 
         if (vX > highest_score) { highest_score = vX; }
         vX = 0;
-
 
         backgroundTile.setScrollDistance(vX);
         stageObj.update(vX);
@@ -180,12 +177,9 @@ function create() {
     keyPause = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
 
     // ? UI
-    highScoreText = this.add.text(10, 10, '' + highest_score, FONT_OBJ);
-    highScoreText.depth = 1;
-
-    scoreText = this.add.text(10, 50, '' + vX, FONT_OBJ);
+    scoreText = this.add.text(SCREEN_WIDTH / 2, 10, '' + vX, FONT_OBJ);
+    scoreText.setOrigin(0.5, 0);
     scoreText.depth = 1;
-    scoreText.alpha = 0;
 
     getReadyText = this.add.text(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 3, 'READY?', GET_READY_FONT);
     getReadyText.depth = 1;
@@ -244,7 +238,6 @@ function update(_, delta) {
     playerObj.updateAnimation();
 
     // ! Update UI
-    highScoreText.text = '' + Math.round(Math.max(highest_score, vX));
     scoreText.text = '' + Math.round(vX);
 
     // ! KillFeed

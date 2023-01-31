@@ -8,7 +8,7 @@ class KillFeed {
 
     static STYLING = { fontFamily: 'bahaha, cursive', fontSize: '22px' };
     static TEXT_SPACING = 25;
-    static SLOT_COUNT = 4;
+    static SLOT_COUNT = 6;
 
     /**
      * @param {Phaser.Scene} scene
