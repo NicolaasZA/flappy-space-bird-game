@@ -30,12 +30,20 @@ class Backdrop {
 
     /**
      * @param {number} playerY
-     * @param {number} screenHeight
      */
-    setParallaxDistance(playerY, screenHeight) {
+    setParallaxDistance(playerY) {
         // -10 <-> 10% parallax based on player distance from center of screen
-        const laxPercent = (playerY / screenHeight * (Backdrop.PARALLAX_FACTOR_PERC * 2)) - Backdrop.PARALLAX_FACTOR_PERC;
+        const laxPercent = (playerY / SCREEN_HEIGHT * (Backdrop.PARALLAX_FACTOR_PERC * 2)) - Backdrop.PARALLAX_FACTOR_PERC;
 
-        this.sprite.tilePositionY = laxPercent * screenHeight;
+        this.sprite.tilePositionY = laxPercent * SCREEN_HEIGHT;
+    }
+
+    /**
+     * @param {number} playerVirtualX
+     * @param {number} playerY
+     */
+    update(playerVirtualX, playerY) {
+        backgroundTile.setScrollDistance(playerVirtualX);
+        backgroundTile.setParallaxDistance(playerY, );
     }
 }

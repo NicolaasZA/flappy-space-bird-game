@@ -91,4 +91,24 @@ class Player {
     jump() {
         this.sprite.setVelocityY(-Player.JUMP_POWER);
     }
+
+    dispose(doDestroy = false) {
+        this.sprite.alpha = 0;
+        this.sprite.x = -50;
+        this.sprite.y = -50;
+
+        if (doDestroy) {
+            this.sprite.destroy();
+            setTimeout(() => this.sprite = undefined, 1000);
+        }
+    }
+
+    /**
+     * @param {string} playerId
+     */
+    convertToOtherPlayer(playerId) {
+        this.id = playerId;
+        this.sprite.setTexture(Player.FRAMES.FRIENDS.name);
+        this.stopPhysics();
+    }
 }

@@ -47,6 +47,9 @@ let backgroundTile;
 /** @type {KillFeed} */
 let killFeedObj;
 
+/** @type {UserInterface} */
+let uiObj;
+
 /** @type {Player} */
 let playerObj;
 /** @type {Array<Player>} */
@@ -73,13 +76,6 @@ var soundSwoosh;
 /** @type {Phaser.Sound.NoAudioSound | Phaser.Sound.HTML5AudioSound | Phaser.Sound.WebAudioSound} */
 var soundtrack;
 
-/** @type {Phaser.GameObjects.Text} */
-var scoreText;
-/** @type {Phaser.GameObjects.Text} */
-var getReadyText;
-/** @type {Phaser.GameObjects.Text} */
-var helpText;
-
 var vX = 0;
 
 function setGameState(newState) {
@@ -93,20 +89,17 @@ function setGameState(newState) {
         vX = 0;
 
         backgroundTile.setScrollDistance(vX);
+
         stageObj.update(vX);
 
-        getReadyText.alpha = 1;
-        helpText.alpha = 1;
+        uiObj.setStartTextVisible(true);
 
         return true;
     }
 
     else if (newState == GameState.PLAYING) {
         playerObj.startPhysics();
-
-        getReadyText.alpha = 0;
-        helpText.alpha = 0;
-
+        uiObj.setStartTextVisible(false);
         return true;
     }
 
@@ -177,17 +170,8 @@ function create() {
     keyPause = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
 
     // ? UI
-    scoreText = this.add.text(SCREEN_WIDTH / 2, 10, '' + vX, FONT_OBJ);
-    scoreText.setOrigin(0.5, 0);
-    scoreText.depth = 1;
-
-    getReadyText = this.add.text(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 3, 'READY?', GET_READY_FONT);
-    getReadyText.depth = 1;
-    getReadyText.setOrigin(0.5, 0);
-
-    helpText = this.add.text(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 3 * 2, 'PRESS SPACE OR TAP', HELP_FONT);
-    helpText.depth = 1;
-    helpText.setOrigin(0.5, 1);
+    uiObj = new UserInterface();
+    uiObj.create(this);
 
     // ? KILL FEED
     killFeedObj = new KillFeed(this, SCREEN_WIDTH - 10, 10);
@@ -227,20 +211,12 @@ function update(_, delta) {
         vX += adjustedSpeed;
 
         mpClient.sendLocation(vX, playerObj.sprite.y);
-
-        // ! Move background
-        backgroundTile.setScrollDistance(vX);
-        backgroundTile.setParallaxDistance(playerObj.sprite.y, SCREEN_HEIGHT);
-
+        backgroundTile.update(vX, playerObj.sprite.y);
         stageObj.update(vX);
     }
 
     playerObj.updateAnimation();
-
-    // ! Update UI
-    scoreText.text = '' + Math.round(vX);
-
-    // ! KillFeed
+    uiObj.setScore(Math.round(vX));
     killFeedObj.update();
 
 }
@@ -251,12 +227,8 @@ function hookMultiplayerEvents(sceneRef) {
             let playerEntry = otherPlayers.find((p) => p.id == obj.id);
             if (!playerEntry) {
                 playerEntry = new Player(sceneRef, startLocation, false, false);
-                playerEntry.id = obj.id;
-                playerEntry.sprite.setTexture(Player.FRAMES.FRIENDS.name);
-                playerEntry.stopPhysics();
-
+                playerEntry.convertToOtherPlayer(obj.id);
                 otherPlayers.push(playerEntry);
-                console.warn('Creating', obj.id, playerEntry);
             }
 
             playerEntry.sprite.alpha = 1;
@@ -268,9 +240,7 @@ function hookMultiplayerEvents(sceneRef) {
         if (playerId != mpClient.id) {
             const playerEntry = otherPlayers.find((p) => p.id == playerId);
             if (playerEntry) {
-                playerEntry.sprite.alpha = 0;
-                playerEntry.sprite.destroy();
-                console.log('Destroying', playerId, playerEntry);
+                playerEntry.dispose(true);
             }
         }
     });
@@ -280,10 +250,7 @@ function hookMultiplayerEvents(sceneRef) {
             const playerEntry = otherPlayers.find((p) => p.id == obj.id);
             if (playerEntry) {
                 explosionEmitter.explode(50, playerEntry.sprite.x, playerEntry.sprite.y);
-
-                playerEntry.sprite.alpha = 0;
-                playerEntry.sprite.x = 0;
-                playerEntry.sprite.y = 0;
+                playerEntry.dispose();
             }
         }
 
