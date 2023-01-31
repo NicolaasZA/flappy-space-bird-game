@@ -1,5 +1,4 @@
 const express = require('express');
-const cors = require('cors');
 const http = require('http');
 const { Server } = require("socket.io");
 const { PlayerMovePayload, PlayerDiePayload, PlayerChangePayload } = require('./public/src/server');
@@ -35,7 +34,6 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-app.use(cors());
 app.use(express.static('public'));
 
 app.get('/stage', (req, res) => {
