@@ -9,6 +9,9 @@ class Stage {
     /** @type {Array<StagePipe>} */
     pipes = [];
 
+    /** @type {Phaser.Geom.Rectangle} */
+    emitZone;
+
     planetEmitters = {
         /** @type {Phaser.GameObjects.Particles.ParticleEmitter} */
         green: undefined,
@@ -28,13 +31,17 @@ class Stage {
     /**
      * @param {Phaser.Scene} scene
      * @param {Player} player
+     * @param {number} width
+     * @param {number} height
      * @param {() => void} onCollisionCallback
      */
-    constructor(scene, player, onCollisionCallback) {
+    constructor(scene, player, width, height, onCollisionCallback) {
         this.sceneRef = scene;
 
         this.pipeData = [];
         this.pipes = [];
+
+        this.emitZone = new Phaser.Geom.Rectangle(width + 40, 0, width, height);
 
         fetch('http://' + window.location.hostname + ':' + window.location.port + '/stage')
             .then((res) => {
@@ -49,34 +56,82 @@ class Stage {
 
                         this.pipes.push(pipeEntry);
                     });
-
-                    window['stage'] = this;
                 });
             });
     }
 
-    createEmitters(sceneRef) {
+    /**
+     * 
+     * @param {Phaser.Scene} sceneRef 
+     */
+    createEmitters(sceneRef, baseSpeed) {
+        /** @type {Phaser.GameObjects.Particles.ParticleEmitterManager} */
         const greenManager = sceneRef.add.particles('green-planet');
-        this.planetEmitters.green = greenManager.createEmitter(StageEmitterConfigs.GREEN);
+        this.planetEmitters.green = greenManager.createEmitter({
+            angle: { min: 0, max: 360 },
+            alpha: 1,
+            lifespan: 50000,
+            frequency: 5000,
+            scale: { min: 0.2, max: 0.4 },
+            blendMode: 'OVERLAY',
+            emitZone: { type: 'random', source: this.emitZone }
+        });
+        this.planetEmitters.green.stop();
 
+        /** @type {Phaser.GameObjects.Particles.ParticleEmitterManager} */
         const purpleManager = sceneRef.add.particles('purple-planet');
         this.planetEmitters.purple = purpleManager.createEmitter({
-            speed: { min: 0, max: 30},
-            alpha: 0.8,
-            scale: { min: 0.2, max: 0.6 },
-            
+            angle: { min: 0, max: 360 },
+            alpha: 1,
+            lifespan: 50000,
+            frequency: 7000,
+            scale: { min: 0.1, max: 0.4 },
             blendMode: 'OVERLAY',
-            emitZone: { type: 'random', source: emitZone}
+            emitZone: { type: 'random', source: this.emitZone }
         });
+        this.planetEmitters.purple.stop();
 
+        /** @type {Phaser.GameObjects.Particles.ParticleEmitterManager} */
         const redManager = sceneRef.add.particles('red-planet');
-        this.planetEmitters.red = greenManager.createEmitter({
-            speed: { min: 0, max: 30},
-            alpha: 0.8,
-            scale: { min: 0.2, max: 0.6 },
+        this.planetEmitters.red = redManager.createEmitter({
+            angle: { min: 0, max: 360 },
+            alpha: 1,
+            lifespan: 50000,
+            frequency: 9000,
+            scale: { min: 0.2, max: 0.4 },
             blendMode: 'OVERLAY',
-            emitZone: { type: 'random', source: emitZone}
+            emitZone: { type: 'random', source: this.emitZone }
         });
+        this.planetEmitters.red.stop();
+
+        this.planetEmitters.green.onParticleEmit((p) => this.setSpeedFromSize(p, baseSpeed));
+        this.planetEmitters.purple.onParticleEmit((p) => this.setSpeedFromSize(p, baseSpeed));
+        this.planetEmitters.red.onParticleEmit((p) => this.setSpeedFromSize(p, baseSpeed));
+    }
+
+    /** 
+     * @param {Phaser.GameObjects.Particles.Particle} particle 
+     * @param {number} baseSpeed 
+    */
+    setSpeedFromSize(particle, baseSpeed) {
+        const multiplier = 1 - (particle.scaleX / 0.4 * 0.3);
+        particle.velocityX = 0 - (baseSpeed * multiplier);
+    }
+
+    startEmitters() {
+        this.planetEmitters.red.start();
+        this.planetEmitters.green.start();
+        this.planetEmitters.purple.start();
+    }
+
+    stopEmitters() {
+        this.planetEmitters.red.stop();
+        this.planetEmitters.green.stop();
+        this.planetEmitters.purple.stop();
+
+        this.planetEmitters.red.killAll();
+        this.planetEmitters.green.killAll();
+        this.planetEmitters.purple.killAll();
     }
 
     /**
@@ -209,18 +264,4 @@ class StagePipe {
         scene.physics.add.collider(player.sprite, this.top, callbackWrapper);
         scene.physics.add.collider(player.sprite, this.bottom, callbackWrapper);
     }
-}
-
-class StageEmitterConfigs {
-
-    static EMIT_ZONE = new Phaser.Geom.Rectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
-
-    /** @type {Phaser.Types.GameObjects.Particles.ParticleEmitterConfig} */
-    static GREEN = {
-        speed: { min: 0, max: 30},
-        alpha: 0.8,
-        scale: { min: 0.2, max: 0.6 },
-        blendMode: 'OVERLAY',
-        emitZone: { type: 'random', source: StageEmitterConfigs.EMIT_ZONE, quantity: 4 }
-    };
 }

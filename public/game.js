@@ -86,6 +86,7 @@ function setGameState(newState) {
 
         backgroundTile.setScrollDistance(vX);
 
+        stageObj.stopEmitters();
         stageObj.update(vX);
 
         uiObj.setStartTextVisible(true);
@@ -95,7 +96,10 @@ function setGameState(newState) {
 
     else if (newState == GameState.PLAYING) {
         playerObj.startPhysics();
+
         uiObj.setStartTextVisible(false);
+        stageObj.startEmitters();
+
         return true;
     }
 
@@ -161,9 +165,9 @@ function create() {
     playerObj.createParticles(redParicleManager);
 
     // ? STAGE
-    stageObj = new Stage(this, playerObj, onPlayerDeath);
+    stageObj = new Stage(this, playerObj, SCREEN_WIDTH, SCREEN_HEIGHT, onPlayerDeath);
     stageObj.addBoundaryBlocks(this, playerObj, onPlayerDeath);
-    stageObj.createEmitters(this);
+    stageObj.createEmitters(this, 260);
 
     // ? KEYBINDS
     keySpace = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
@@ -211,7 +215,7 @@ function update(_, delta) {
     if (currentGameState == GameState.PLAYING) {
         vX += adjustedSpeed;
 
-        mpClient.sendLocation(vX, playerObj.sprite.y);
+        mpClient.sendLocation(vX, playerObj.sprite.y, playerObj.sprite.body.velocity.x, playerObj.sprite.body.velocity.y);
         backgroundTile.update(vX, playerObj.sprite.y);
         stageObj.update(vX);
     }
@@ -225,7 +229,7 @@ function update(_, delta) {
 function hookMultiplayerEvents(sceneRef) {
     mpClient.onPlayerMove((obj) => {
         if (obj.playerId != mpClient.id) {
-            let playerEntry = otherPlayers.find((p) => p.playerId == obj.id);
+            let playerEntry = otherPlayers.find((p) => p.playerId == obj.playerId);
             if (!playerEntry) {
                 playerEntry = new Player(sceneRef, startLocation, false, false);
                 playerEntry.convertToOtherPlayer(obj.playerId);
@@ -234,6 +238,7 @@ function hookMultiplayerEvents(sceneRef) {
 
             playerEntry.sprite.alpha = 1;
             playerEntry.setLocation(startLocation.x + obj.location.x - vX, obj.location.y);
+            playerEntry.updateAnimation(obj.velocity.y);
         }
     });
 

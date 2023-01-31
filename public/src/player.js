@@ -1,7 +1,7 @@
 class Player {
 
     /** @type {string} */
-    id;
+    playerId;
 
     /** @type {Phaser.Physics.Arcade.Image} */
     sprite;
@@ -72,17 +72,16 @@ class Player {
         this.trailEmitter.startFollow(this.sprite);
     }
 
-    updateAnimation() {
-        const frame = this.calculateFrame();
-        this.sprite.setTexture(frame.name);
+    updateAnimation(vY = this.sprite.body.velocity.y) {
+        const frame = this.calculateFrame(vY);
+        if (!this.playerId) { this.sprite.setTexture(frame.name); }
         this.sprite.angle = frame.angle;
     }
 
-    calculateFrame() {
-        const vY = this.sprite.body.velocity.y;
-        if (vY < (0 - Player.FRAMES.rangeValue)) {
+    calculateFrame(_) {
+        if (_ < (0 - Player.FRAMES.rangeValue)) {
             return Player.FRAMES.UP;
-        } else if (vY > Player.FRAMES.rangeValue) {
+        } else if (_ > Player.FRAMES.rangeValue) {
             return Player.FRAMES.DOWN;
         }
         return Player.FRAMES.FRONT;
@@ -107,7 +106,7 @@ class Player {
      * @param {string} playerId
      */
     convertToOtherPlayer(playerId) {
-        this.id = playerId;
+        this.playerId = playerId;
         this.sprite.setTexture(Player.FRAMES.FRIENDS.name);
         this.stopPhysics();
     }

@@ -23,8 +23,8 @@
   
 ### Improvements
 - [ ] Use Phaser animation system for player sprite
-- [ ] Broadcasting velocities alongside location
-- [ ] Movement animations on other players
+- [x] Broadcasting velocities alongside location
+- [x] Movement animations on other players
 - [ ] Death sounds for other players
 - [ ] Flap sounds for nearby players
 - [ ] Fullscreen
