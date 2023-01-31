@@ -7,10 +7,6 @@ const VELOCITY = 2.2;
 
 let highest_score = 0;
 
-const FONT_OBJ = { fontFamily: 'bahaha, cursive', fontSize: '48px' };
-const GET_READY_FONT = { fontFamily: 'bahaha, cursive', fontSize: '64px', color: '#ff0000' };
-const HELP_FONT = { fontFamily: 'bahaha, cursive', fontSize: '48px', color: '#ffffff' };
-
 const game = new Phaser.Game({
     type: Phaser.AUTO,
     width: SCREEN_WIDTH,
