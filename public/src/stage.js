@@ -9,6 +9,19 @@ class Stage {
     /** @type {Array<StagePipe>} */
     pipes = [];
 
+    planetEmitters = {
+        /** @type {Phaser.GameObjects.Particles.ParticleEmitter} */
+        green: undefined,
+        /** @type {Phaser.GameObjects.Particles.ParticleEmitter} */
+        purple: undefined,
+        /** @type {Phaser.GameObjects.Particles.ParticleEmitter} */
+        red: undefined,
+
+        greenManager: undefined,
+        purpleManager: undefined,
+        redManager: undefined,
+    };
+
     static PIPE_GAP = 60;
     static PIPE_WIDTH = 50;
 
@@ -40,6 +53,30 @@ class Stage {
                     window['stage'] = this;
                 });
             });
+    }
+
+    createEmitters(sceneRef) {
+        const greenManager = sceneRef.add.particles('green-planet');
+        this.planetEmitters.green = greenManager.createEmitter(StageEmitterConfigs.GREEN);
+
+        const purpleManager = sceneRef.add.particles('purple-planet');
+        this.planetEmitters.purple = purpleManager.createEmitter({
+            speed: { min: 0, max: 30},
+            alpha: 0.8,
+            scale: { min: 0.2, max: 0.6 },
+            
+            blendMode: 'OVERLAY',
+            emitZone: { type: 'random', source: emitZone}
+        });
+
+        const redManager = sceneRef.add.particles('red-planet');
+        this.planetEmitters.red = greenManager.createEmitter({
+            speed: { min: 0, max: 30},
+            alpha: 0.8,
+            scale: { min: 0.2, max: 0.6 },
+            blendMode: 'OVERLAY',
+            emitZone: { type: 'random', source: emitZone}
+        });
     }
 
     /**
@@ -172,4 +209,18 @@ class StagePipe {
         scene.physics.add.collider(player.sprite, this.top, callbackWrapper);
         scene.physics.add.collider(player.sprite, this.bottom, callbackWrapper);
     }
+}
+
+class StageEmitterConfigs {
+
+    static EMIT_ZONE = new Phaser.Geom.Rectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+    /** @type {Phaser.Types.GameObjects.Particles.ParticleEmitterConfig} */
+    static GREEN = {
+        speed: { min: 0, max: 30},
+        alpha: 0.8,
+        scale: { min: 0.2, max: 0.6 },
+        blendMode: 'OVERLAY',
+        emitZone: { type: 'random', source: StageEmitterConfigs.EMIT_ZONE, quantity: 4 }
+    };
 }

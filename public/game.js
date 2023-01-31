@@ -122,6 +122,10 @@ function preload() {
     this.load.audio('wing', ['assets/audio/wing.wav', 'assets/audio/wing.ogg']);
     this.load.audio('swoosh', ['assets/audio/swoosh.wav', 'assets/audio/swoosh.ogg']);
     this.load.audio('soundtrack', ['assets/audio/soundtrack.mp3']);
+
+    this.load.image('green-planet', 'assets/particles/green-planet.png');
+    this.load.image('purple-planet', 'assets/particles/purple-planet.png');
+    this.load.image('red-planet', 'assets/particles/red-planet.png');
 }
 
 function create() {
@@ -159,6 +163,7 @@ function create() {
     // ? STAGE
     stageObj = new Stage(this, playerObj, onPlayerDeath);
     stageObj.addBoundaryBlocks(this, playerObj, onPlayerDeath);
+    stageObj.createEmitters(this);
 
     // ? KEYBINDS
     keySpace = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
