@@ -33,6 +33,23 @@ app.get('/stage', (req, res) => {
     res.json(stage);
 });
 
+app.get('/res', (req, res) => {
+    const resourceName = req.query.name ?? '';
+    const production = (req.query.prod ?? 'false') == 'true';
+
+    if (resourceName == 'phaser') {
+        res.sendFile(
+            production
+                ? 'node_modules/phaser/dist/phaser-arcade-physics.min.js'
+                : 'node_modules/phaser/dist/phaser-arcade-physics.js',
+            { root: __dirname }
+        );
+    } else {
+        res.statusCode = 404;
+        res.send();
+    }
+});
+
 // ! CREATE SOCKET SERVER
 
 io.on('connection', (socket) => {
