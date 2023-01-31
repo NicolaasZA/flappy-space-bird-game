@@ -40,6 +40,7 @@ class KillFeed {
         }
         drawable.forEach((entry, idx) => {
             this.slots[idx].text = entry;
+            this.slots[idx].setColor(entry.startsWith('YOU') ? '#ffef6b' : '#ffffff');
         });
     }
 }
@@ -53,7 +54,7 @@ class KillFeedEntry {
     /** @type {number} */
     expires;
 
-    static LIFETIME_MS = 3000;
+    static LIFETIME_SECONDS = 5;
     static SCORE_PAD_LENGTH = 4;
 
     /**
@@ -64,7 +65,7 @@ class KillFeedEntry {
         this.playerName = (playerName ?? '').slice(0, 4);
         this.score = Math.floor(score);
 
-        this.expires = Date.now() + KillFeedEntry.LIFETIME_MS;
+        this.expires = Date.now() + (KillFeedEntry.LIFETIME_SECONDS * 1000);
     }
 
     getFormattedScore() {
@@ -76,6 +77,6 @@ class KillFeedEntry {
     }
 
     getText() {
-        return `${this.playerName} 💀 ${this.getFormattedScore()}`;
+        return `${this.playerName} 💀 ${this.getFormattedScore()}`.toUpperCase();
     }
 }
