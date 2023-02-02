@@ -73,7 +73,7 @@ class Stage {
             lifespan: 50000,
             frequency: 5000,
             scale: { min: 0.2, max: 0.4 },
-            blendMode: 'OVERLAY',
+            blendMode: 'SUBTRACT',
             emitZone: { type: 'random', source: this.emitZone }
         });
         this.planetEmitters.green.stop();
@@ -86,7 +86,7 @@ class Stage {
             lifespan: 50000,
             frequency: 7000,
             scale: { min: 0.1, max: 0.4 },
-            blendMode: 'OVERLAY',
+            blendMode: 'ADD',
             emitZone: { type: 'random', source: this.emitZone }
         });
         this.planetEmitters.purple.stop();
@@ -99,7 +99,7 @@ class Stage {
             lifespan: 50000,
             frequency: 9000,
             scale: { min: 0.2, max: 0.4 },
-            blendMode: 'OVERLAY',
+            blendMode: 'ADD',
             emitZone: { type: 'random', source: this.emitZone }
         });
         this.planetEmitters.red.stop();

@@ -67,7 +67,7 @@ class Player {
             alpha: 0.8,
             lifespan: 400,
             scale: { start: 0.2, end: 0 },
-            blendMode: 'OVERLAY'
+            blendMode: 'ADD'
         });
         this.trailEmitter.startFollow(this.sprite);
     }
