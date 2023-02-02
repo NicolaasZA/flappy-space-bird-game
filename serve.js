@@ -101,7 +101,7 @@ io.on('connection', (socket) => {
 });
 
 // ! SERVE
-const PORT = 80;
+const PORT = 4200;
 server.listen(PORT, () => {
     console.log('start', 'listening on *:' + PORT);
 });
