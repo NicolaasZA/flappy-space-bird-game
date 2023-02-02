@@ -102,6 +102,6 @@ io.on('connection', (socket) => {
 
 // ! SERVE
 const PORT = 4200;
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
     console.log('start', 'listening on *:' + PORT);
 });
