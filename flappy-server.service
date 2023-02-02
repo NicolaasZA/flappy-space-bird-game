@@ -1,0 +1,14 @@
+[Unit]
+Description=Flappy Bird Multiplayer Server
+After=network.target
+
+[Service]
+WorkingDirectory=/root/flappy-space-bird-game
+Environment=NODE_PORT=4200
+Type=simple
+User=ubuntu
+ExecStart=node /root/flappy-space-bird-game/serve.js
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
